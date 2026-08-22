@@ -16,13 +16,26 @@ export function absolutizeProtocolRelativeUrls(html: string): string {
     .replace(/(url\()\s*\/\//g, '$1https://');
 }
 
+/**
+ * The REST API returns a full HTML document, not a fragment: it carries a
+ * <base> tag that hijacks relative URL resolution for our whole app and a
+ * <link rel="stylesheet"> to MediaWiki's Vector skin CSS which lands
+ * asynchronously on top of our own styles (fonts, link colors, backgrounds).
+ * Keep only the actual article body.
+ */
+export function extractArticleBody(html: string): string {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.innerHTML;
+}
+
 export async function fetchArticleHtml(title: string): Promise<string> {
   const url = `https://en.wikipedia.org/api/rest_v1/page/html/${encodeURIComponent(title)}`
   const response = await fetch(url)
   if (!response.ok) {
     throw new Error('Failed to fetch article HTML')
   }
-  return absolutizeProtocolRelativeUrls(await response.text())
+  const raw = await response.text()
+  return absolutizeProtocolRelativeUrls(extractArticleBody(raw))
 }
 
 export interface ArticleSummary {

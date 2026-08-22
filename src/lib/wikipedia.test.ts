@@ -1,8 +1,32 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { fetchEntityMetadata, absolutizeProtocolRelativeUrls } from './wikipedia';
+import {
+  fetchEntityMetadata,
+  absolutizeProtocolRelativeUrls,
+  extractArticleBody,
+} from './wikipedia';
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe('extractArticleBody', () => {
+  it('strips the head: base tag, MediaWiki stylesheets, meta tags', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <base href="//en.wikipedia.org/wiki/"/>
+      <link rel="stylesheet" href="/w/load.php?modules=mediawiki.skinning&skin=vector"/>
+      <meta charset="utf-8">
+    </head><body data-parsoid="x"><h2>Lead section</h2><p>Text</p></body></html>`;
+    const body = extractArticleBody(html);
+    expect(body).toContain('<h2>Lead section</h2>');
+    expect(body).not.toContain('base');
+    expect(body).not.toContain('load.php');
+    expect(body).not.toContain('<meta');
+  });
+
+  it('keeps template style blocks that live inside the body', () => {
+    const html = '<body><style>.tpl .col{width:50%}</style><div class="tpl">x</div></body>';
+    expect(extractArticleBody(html)).toContain('.tpl .col');
+  });
 });
 
 describe('absolutizeProtocolRelativeUrls', () => {
