@@ -21,7 +21,7 @@ export async function fetchArticleSummary(title: string): Promise<ArticleSummary
   return response.json()
 }
 
-interface SearchResultHit {
+export interface SearchResultHit {
   pageid: number
   title: string
   snippet: string

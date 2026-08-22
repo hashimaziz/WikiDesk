@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Search as SearchIcon, Loader2 } from 'lucide-react';
-import { searchArticles } from '../lib/wikipedia';
+import { searchArticles, type SearchResultHit } from '../lib/wikipedia';
 import { useNavigate } from 'react-router-dom';
 
 interface CompareModalProps {
@@ -10,7 +10,7 @@ interface CompareModalProps {
 
 export function CompareModal({ currentTitle, onClose }: CompareModalProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<SearchResultHit[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 

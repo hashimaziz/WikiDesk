@@ -8,7 +8,7 @@ describe('cn', () => {
   });
 
   it('ignores falsy inputs', () => {
-    expect(cn('a', false && 'b', undefined, null, 'c')).toBe('a c');
+    expect(cn('a', false, undefined, null, 'c')).toBe('a c');
   });
 });
 
