@@ -48,35 +48,74 @@ interface WikiDeskApi {
 
 declare global {
   interface Window {
-    wikiDesk: WikiDeskApi
+    wikiDesk?: WikiDeskApi
   }
 }
 
-const api = (): WikiDeskApi => window.wikiDesk
+// All wrappers are async so a missing preload bridge surfaces as a rejected
+// promise (loggable) instead of a synchronous TypeError that crashes React.
+function bridge(): WikiDeskApi {
+  if (!window.wikiDesk) {
+    throw new Error('WikiDesk bridge unavailable: the Electron preload script failed to load')
+  }
+  return window.wikiDesk
+}
 
 // ---- History ----
 
-export const recordArticleView = (articleId: string, title: string) => api().history.record(articleId, title)
-export const getRecentArticles = (limit = 12) => api().history.getRecent(limit)
-export const getContinueReading = () => api().history.getContinueReading()
+export async function recordArticleView(articleId: string, title: string) {
+  return bridge().history.record(articleId, title)
+}
+
+export async function getRecentArticles(limit = 12): Promise<HistoryEntry[]> {
+  return bridge().history.getRecent(limit)
+}
+
+export async function getContinueReading(): Promise<HistoryEntry[]> {
+  return bridge().history.getContinueReading()
+}
 
 // ---- Collections ----
 
-export const getCollections = () => api().collections.list()
-export const createCollection = (name: string) => api().collections.create(name)
-export const deleteCollection = (collectionId: string) => api().collections.delete(collectionId)
-export const getCollectionArticles = (collectionId: string) => api().collections.getArticles(collectionId)
-export const addArticleToCollection = (
+export async function getCollections(): Promise<Collection[]> {
+  return bridge().collections.list()
+}
+
+export async function createCollection(name: string): Promise<Collection> {
+  return bridge().collections.create(name)
+}
+
+export async function deleteCollection(collectionId: string): Promise<void> {
+  return bridge().collections.delete(collectionId)
+}
+
+export async function getCollectionArticles(collectionId: string): Promise<ArticleRecord[]> {
+  return bridge().collections.getArticles(collectionId)
+}
+
+export async function addArticleToCollection(
   collectionId: string,
   articleId: string,
   title: string,
   summary: string | null,
-) => api().collections.addArticle(collectionId, articleId, title, summary)
-export const removeArticleFromCollection = (collectionId: string, articleId: string) =>
-  api().collections.removeArticle(collectionId, articleId)
-export const getCollectionsForArticle = (articleId: string) => api().collections.getForArticle(articleId)
+): Promise<void> {
+  return bridge().collections.addArticle(collectionId, articleId, title, summary)
+}
+
+export async function removeArticleFromCollection(collectionId: string, articleId: string): Promise<void> {
+  return bridge().collections.removeArticle(collectionId, articleId)
+}
+
+export async function getCollectionsForArticle(articleId: string): Promise<string[]> {
+  return bridge().collections.getForArticle(articleId)
+}
 
 // ---- Settings ----
 
-export const getSettings = () => api().settings.get()
-export const updateSettings = (patch: Partial<Settings>) => api().settings.update(patch)
+export async function getSettings(): Promise<Settings> {
+  return bridge().settings.get()
+}
+
+export async function updateSettings(patch: Partial<Settings>): Promise<Settings> {
+  return bridge().settings.update(patch)
+}

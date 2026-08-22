@@ -25,6 +25,19 @@ export default defineConfig({
         onstart(options) {
           options.reload()
         },
+        vite: {
+          build: {
+            rollupOptions: {
+              output: {
+                // The plugin emits an ESM preload as preload.js by default,
+                // but Electron only honors ESM preloads with an .mjs
+                // extension (paired with sandbox: false in main.ts).
+                entryFileNames: '[name].mjs',
+                chunkFileNames: '[name].mjs',
+              },
+            },
+          },
+        },
       },
     ]),
     renderer(),

@@ -34,6 +34,7 @@ export function initializeDB() {
   const userDataPath = app.getPath('userData')
   db = new Database(path.join(userDataPath, 'wikidesk.sqlite'))
   db.pragma('journal_mode = WAL')
+  db.pragma('foreign_keys = ON')
 
   setupTables()
   setupIpcHandlers()
@@ -174,8 +175,8 @@ function setupIpcHandlers() {
   })
 
   ipcMain.handle('collections:getForArticle', (_e, articleId: string): string[] => {
-    return db.prepare('SELECT collection_id FROM Collection_Articles WHERE article_id = ?').all(articleId)
-      .map((r: any) => r.collection_id)
+    const rows = db.prepare('SELECT collection_id FROM Collection_Articles WHERE article_id = ?').all(articleId) as { collection_id: string }[]
+    return rows.map((r) => r.collection_id)
   })
 
   // ---- Settings ----

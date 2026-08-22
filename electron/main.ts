@@ -15,7 +15,10 @@ function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      // ESM preload (.mjs) requires the sandbox to be disabled;
+      // contextIsolation stays on so the renderer still has no Node access.
+      preload: path.join(__dirname, 'preload.mjs'),
+      sandbox: false,
       nodeIntegration: false,
       contextIsolation: true,
     },
