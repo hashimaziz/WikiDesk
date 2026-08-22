@@ -113,7 +113,7 @@ export function SmartSidebar({ html }: SmartSidebarProps) {
   };
 
   return (
-    <div className="w-72 h-full bg-sidebar border-l border-black/5 dark:border-white/5 overflow-y-auto pt-6 px-4 pb-20">
+    <div className="w-72 shrink-0 h-full bg-sidebar border-l border-black/5 dark:border-white/5 overflow-y-auto pt-6 px-4 pb-20">
       <div className="mb-6 pb-4 border-b border-black/5 dark:border-white/5">
         <h2 className="text-lg font-bold">Related Discovery</h2>
         <p className="text-xs text-gray-500 mt-1">Extracted from this article</p>

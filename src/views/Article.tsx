@@ -3,7 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchArticleHtml, fetchArticleSummary } from '../lib/wikipedia';
 import { useAppContext } from '../context/useAppContext';
 import { FONT_MIN, FONT_MAX, CONTENT_WIDTH_PRESETS } from '../lib/constants';
-import { Maximize, Minimize, Minus, Plus, Clock, Network, BookMarked, X, Columns } from 'lucide-react';
+import {
+  Maximize, Minimize, Minus, Plus, Clock, Network, BookMarked, X, Columns,
+  PanelRightClose, PanelRightOpen,
+} from 'lucide-react';
 import { SmartSidebar } from '../components/SmartSidebar';
 import { TimelineModal } from '../components/TimelineModal';
 import { GraphModal } from '../components/GraphModal';
@@ -11,6 +14,10 @@ import { CompareModal } from '../components/CompareModal';
 import { getCollections, addArticleToCollection, getCollectionsForArticle, recordArticleView } from '../lib/db-client';
 import type { Collection } from '../lib/db-client';
 import { cn, safeDecode } from '../lib/utils';
+import { useMinWidth } from '../hooks/useMinWidth';
+
+/** Below this width the reading column would be too narrow with the sidebar open. */
+const SIDEBAR_MIN_VIEWPORT = 1024;
 
 export function Article() {
   const { title } = useParams<{ title: string }>();
@@ -24,6 +31,15 @@ export function Article() {
   const [showTimeline, setShowTimeline] = useState(false);
   const [showGraph, setShowGraph] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
+
+  // Discovery panel: defaults to "open when there is room for it" and the
+  // toolbar button overrides that default. No effect needed — collapsing on
+  // narrow windows falls out of the derivation.
+  const wideEnough = useMinWidth(SIDEBAR_MIN_VIEWPORT);
+  const [sidebarOverride, setSidebarOverride] = useState<boolean | null>(null);
+  const sidebarVisible = !focusMode && (sidebarOverride ?? wideEnough);
+
+  const toggleSidebar = () => setSidebarOverride(!(sidebarOverride ?? wideEnough));
 
   const [collections, setCollections] = useState<Collection[]>([]);
   const [savedCollectionIds, setSavedCollectionIds] = useState<string[]>([]);
@@ -108,17 +124,17 @@ export function Article() {
 
   return (
     <div className="flex h-full w-full">
-      <div className={cn("relative flex-1 h-full flex flex-col transition-all duration-300", focusMode ? "bg-background" : "bg-transparent")}>
+      <div className={cn("relative flex-1 min-w-0 h-full flex flex-col transition-all duration-300", focusMode ? "bg-background" : "bg-transparent")}>
         {/* Article Header & Controls */}
         <div className={cn(
-          "sticky top-0 z-10 flex items-center justify-between px-8 py-4 backdrop-blur-xl bg-background/80 border-b border-black/5 dark:border-white/5 transition-opacity duration-300",
+          "sticky top-0 z-10 flex items-center justify-between gap-3 px-4 sm:px-8 py-4 backdrop-blur-xl bg-background/80 border-b border-black/5 dark:border-white/5 transition-opacity duration-300",
           focusMode ? "opacity-0 hover:opacity-100" : "opacity-100"
         )}>
-        <h1 className="text-2xl font-bold font-serif tracking-tight truncate flex-1 mr-4">
+        <h1 className="text-xl sm:text-2xl font-bold font-serif tracking-tight truncate flex-1 min-w-0">
           {title?.replace(/_/g, ' ')}
         </h1>
-        
-        <div className="flex items-center space-x-4">
+
+        <div className="flex items-center space-x-2 sm:space-x-4 shrink-0">
           <div className="relative">
             <button 
               onClick={() => showCollections ? setShowCollections(false) : loadCollections()}
@@ -163,7 +179,7 @@ export function Article() {
             <button onClick={() => setFontSize(fontSize + 2)} disabled={fontSize >= FONT_MAX} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full disabled:opacity-30"><Plus className="w-4 h-4" /></button>
           </div>
 
-          <div className="flex items-center bg-black/5 dark:bg-white/5 rounded-full p-1" title="Content Width">
+          <div className="hidden md:flex items-center bg-black/5 dark:bg-white/5 rounded-full p-1" title="Content Width">
             {CONTENT_WIDTH_PRESETS.map((width) => (
               <button
                 key={width}
@@ -204,7 +220,18 @@ export function Article() {
             <Network className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
           
-          <button 
+          <button
+            onClick={toggleSidebar}
+            className={cn(
+              'p-2 rounded-full transition-colors',
+              sidebarVisible ? 'bg-blue-500/20 text-blue-500' : 'hover:bg-black/5 dark:hover:bg-white/10',
+            )}
+            title={sidebarVisible ? 'Hide Discovery Panel' : 'Show Discovery Panel'}
+          >
+            {sidebarVisible ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+          </button>
+
+          <button
             onClick={() => setFocusMode(!focusMode)}
             className={cn("p-2 rounded-full transition-colors", focusMode ? "bg-blue-500/20 text-blue-500" : "hover:bg-black/5 dark:hover:bg-white/10")}
             title="Focus Mode"
@@ -215,7 +242,7 @@ export function Article() {
       </div>
 
       {/* Article Content Area */}
-      <div className="flex-1 overflow-y-auto px-8 py-12 scroll-smooth">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-12 scroll-smooth">
         <div
           className="mx-auto transition-all duration-300"
           style={{ fontSize: `${fontSize}px`, lineHeight: 1.6, maxWidth: `${contentWidth}px` }}
@@ -229,7 +256,7 @@ export function Article() {
       </div>
       </div>
       
-      {!focusMode && <SmartSidebar html={html} />}
+      {sidebarVisible && <SmartSidebar html={html} />}
       
       {showTimeline && (
         <TimelineModal html={html} onClose={() => setShowTimeline(false)} />
