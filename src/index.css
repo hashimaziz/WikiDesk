@@ -25,6 +25,10 @@ body {
 }
 
 /* Wikipedia Content Overrides */
+.wikipedia-content {
+  color: var(--color-foreground);
+}
+
 .wikipedia-content .mw-editsection {
   display: none !important;
 }
@@ -51,6 +55,15 @@ body {
   border-bottom-color: #3b82f6;
 }
 
+.dark .wikipedia-content a {
+  /* Lighter blue for contrast on near-black background. */
+  color: #7cabfb;
+}
+
+.dark .wikipedia-content a:hover {
+  border-bottom-color: #7cabfb;
+}
+
 .wikipedia-content figure {
   margin: 2rem auto;
   text-align: center;
@@ -69,5 +82,46 @@ body {
 }
 
 .dark .wikipedia-content figcaption {
+  color: #9ca3af;
+}
+
+/*
+ * Dark-mode readability: Wikipedia HTML assumes a white page. Tables carry
+ * inline/class backgrounds and text colors tuned for light mode, which turn
+ * into unreadable black-on-black or white-on-white patches.
+ */
+.dark .wikipedia-content table {
+  color: inherit;
+  border-collapse: collapse;
+}
+
+.dark .wikipedia-content th,
+.dark .wikipedia-content td {
+  /* !important beats Wikipedia's inline cell styling. */
+  background-color: transparent !important;
+  color: inherit !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.dark .wikipedia-content caption {
+  color: #9ca3af;
+}
+
+.dark .wikipedia-content small,
+.dark .wikipedia-content .mw-small-text {
+  color: #9ca3af;
+}
+
+/* Hatnotes / disambiguation lines ("Not to be confused with…") */
+.dark .wikipedia-content .hatnote,
+.dark .wikipedia-content .dablink {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Reference markers and footnotes stay legible */
+.dark .wikipedia-content sup.reference,
+.dark .wikipedia-content ol.references,
+.dark .wikipedia-content .reflist {
   color: #9ca3af;
 }
