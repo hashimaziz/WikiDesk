@@ -1,10 +1,28 @@
+/**
+ * REST HTML references assets with protocol-relative URLs ("//upload…").
+ * When the app runs from file:// these resolve to file://upload.wikimedia.org
+ * and every image breaks — pin them to https.
+ */
+export function absolutizeProtocolRelativeUrls(html: string): string {
+  return html
+    // srcset holds multiple candidate URLs ("//a.jpg 1x, //b.jpg 2x").
+    .replace(/\ssrcset\s*=\s*"([^"]*)"/gi, (_m, value: string) =>
+      ` srcset="${value.replace(/(^|[\s,])\/\//g, '$1https://')}"`,
+    )
+    .replace(
+      /(\s(?:src|href|poster|data-src|srcset)\s*=\s*["'])\/\//gi,
+      '$1https://',
+    )
+    .replace(/(url\()\s*\/\//g, '$1https://');
+}
+
 export async function fetchArticleHtml(title: string): Promise<string> {
   const url = `https://en.wikipedia.org/api/rest_v1/page/html/${encodeURIComponent(title)}`
   const response = await fetch(url)
   if (!response.ok) {
     throw new Error('Failed to fetch article HTML')
   }
-  return response.text()
+  return absolutizeProtocolRelativeUrls(await response.text())
 }
 
 export interface ArticleSummary {

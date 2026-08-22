@@ -1,8 +1,34 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { fetchEntityMetadata } from './wikipedia';
+import { fetchEntityMetadata, absolutizeProtocolRelativeUrls } from './wikipedia';
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe('absolutizeProtocolRelativeUrls', () => {
+  it('pins protocol-relative img srcs to https', () => {
+    const html = '<img src="//upload.wikimedia.org/wikipedia/commons/a.jpg" alt="x">';
+    expect(absolutizeProtocolRelativeUrls(html)).toBe(
+      '<img src="https://upload.wikimedia.org/wikipedia/commons/a.jpg" alt="x">',
+    );
+  });
+
+  it('rewrites every candidate in a srcset attribute', () => {
+    const html = '<img srcset="//a.org/1.jpg 1x, //b.org/2.jpg 2x">';
+    const result = absolutizeProtocolRelativeUrls(html);
+    expect(result).toContain('srcset="https://a.org/1.jpg 1x, https://b.org/2.jpg 2x"');
+  });
+
+  it('leaves already-absolute and relative URLs untouched', () => {
+    const html = '<img src="https://x.org/a.png"><a href="./Other_Page">y</a><img src="/local.png">';
+    expect(absolutizeProtocolRelativeUrls(html)).toBe(html);
+  });
+
+  it('rewrites css url() references', () => {
+    expect(absolutizeProtocolRelativeUrls('<div style="background:url(//c.org/i.png)">')).toBe(
+      '<div style="background:url(https://c.org/i.png)">',
+    );
+  });
 });
 
 function stubFetch(responder: (titles: string[]) => unknown) {
