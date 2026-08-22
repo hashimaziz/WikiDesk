@@ -107,20 +107,23 @@ function setupIpcHandlers() {
   })
 
   ipcMain.handle('history:getRecent', (_e, limit: number = 12): HistoryRow[] => {
+    // Order by id rather than timestamp: several views can land in the same
+    // millisecond, and ids are strictly monotonic.
     return db.prepare(`
       SELECT h.id, h.article_id, a.title, h.timestamp
       FROM History h JOIN Articles a ON a.id = h.article_id
-      ORDER BY h.timestamp DESC LIMIT ?
+      ORDER BY h.id DESC LIMIT ?
     `).all(limit) as HistoryRow[]
   })
 
   ipcMain.handle('history:getContinueReading', (): HistoryRow[] => {
-    // Most recently viewed distinct articles, excluding ones viewed just now.
+    // Most recently viewed distinct articles; MAX(h.id) is each article's
+    // latest view event.
     return db.prepare(`
       SELECT MAX(h.id) as id, h.article_id, a.title, MAX(h.timestamp) as timestamp
       FROM History h JOIN Articles a ON a.id = h.article_id
       GROUP BY h.article_id
-      ORDER BY timestamp DESC LIMIT 6
+      ORDER BY id DESC LIMIT 6
     `).all() as HistoryRow[]
   })
 
