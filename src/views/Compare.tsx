@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchArticleHtml } from '../lib/wikipedia';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext } from '../context/useAppContext';
+import { FONT_MIN, FONT_MAX } from '../lib/constants';
 import { X, Minus, Plus, Link2, Unlink } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -12,7 +13,8 @@ export function Compare() {
   
   const [html1, setHtml1] = useState('');
   const [html2, setHtml2] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loadedPair, setLoadedPair] = useState<string | null>(null);
+  const loading = Boolean(title1 && title2) && loadedPair !== `${title1}|${title2}`;
   const [synced, setSynced] = useState(true);
 
   const col1Ref = useRef<HTMLDivElement>(null);
@@ -20,20 +22,23 @@ export function Compare() {
   const isScrollingRef = useRef<1 | 2 | null>(null);
 
   useEffect(() => {
-    if (!title1 || !title2) return;
-    
-    setLoading(true);
+    if (!title1 || !title2 || loadedPair === `${title1}|${title2}`) return;
+    let cancelled = false;
     Promise.all([
       fetchArticleHtml(title1),
       fetchArticleHtml(title2)
     ])
     .then(([htmlContent1, htmlContent2]) => {
+      if (cancelled) return;
       setHtml1(htmlContent1);
       setHtml2(htmlContent2);
+      setLoadedPair(`${title1}|${title2}`);
     })
-    .catch(err => console.error(err))
-    .finally(() => setLoading(false));
-  }, [title1, title2]);
+    .catch(err => console.error(err));
+    return () => {
+      cancelled = true;
+    };
+  }, [title1, title2, loadedPair]);
 
   // Synchronized scrolling
   const handleScroll = (col: 1 | 2) => {
@@ -98,9 +103,9 @@ export function Compare() {
           </button>
           
           <div className="flex items-center space-x-2 bg-black/5 dark:bg-white/5 rounded-full px-3 py-1.5">
-            <button onClick={() => setFontSize(Math.max(12, fontSize - 2))} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full"><Minus className="w-4 h-4" /></button>
+            <button onClick={() => setFontSize(fontSize - 2)} disabled={fontSize <= FONT_MIN} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full disabled:opacity-30"><Minus className="w-4 h-4" /></button>
             <span className="text-sm font-medium w-6 text-center">{fontSize}</span>
-            <button onClick={() => setFontSize(Math.min(32, fontSize + 2))} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full"><Plus className="w-4 h-4" /></button>
+            <button onClick={() => setFontSize(fontSize + 2)} disabled={fontSize >= FONT_MAX} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full disabled:opacity-30"><Plus className="w-4 h-4" /></button>
           </div>
           
           <button onClick={() => navigate(-1)} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors">

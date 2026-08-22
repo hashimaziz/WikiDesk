@@ -1,15 +1,16 @@
 import { HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { AppProvider, useAppContext } from './context/AppContext';
+import { AppProvider } from './context/AppContext';
+import { useAppContext } from './context/useAppContext';
 import { Search as SearchView } from './views/Search';
 import { Article } from './views/Article';
 import { Collections } from './views/Collections';
 import { Compare } from './views/Compare';
-import { Search, BookMarked, History as HistoryIcon, Share2, Settings, Home } from 'lucide-react';
+import { Search, BookMarked, History as HistoryIcon, Share2, Settings as SettingsIcon, Home, Sun, Moon } from 'lucide-react';
 import { cn } from './lib/utils';
 
 function Sidebar() {
   const location = useLocation();
-  const { focusMode } = useAppContext();
+  const { focusMode, theme, setTheme } = useAppContext();
 
   if (focusMode) return null;
 
@@ -19,8 +20,11 @@ function Sidebar() {
     { icon: BookMarked, label: 'Collections', path: '/collections' },
     { icon: HistoryIcon, label: 'Recent', path: '/recent' },
     { icon: Share2, label: 'Graph', path: '/graph' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: SettingsIcon, label: 'Settings', path: '/settings' },
   ];
+
+  const isActive = (path: string) =>
+    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
   return (
     <div className="w-64 h-full bg-sidebar border-r border-black/5 dark:border-white/5 flex flex-col backdrop-blur-xl bg-opacity-80 dark:bg-opacity-80 pt-10">
@@ -37,19 +41,31 @@ function Sidebar() {
             to={item.path}
             className={cn(
               "flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
-              location.pathname === item.path 
+              isActive(item.path)
                 ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium"
                 : "text-gray-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5"
             )}
           >
             <item.icon className={cn(
               "w-5 h-5 transition-colors",
-              location.pathname === item.path ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-500 group-hover:text-gray-900 dark:group-hover:text-gray-200"
+              isActive(item.path) ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-500 group-hover:text-gray-900 dark:group-hover:text-gray-200"
             )} />
             <span>{item.label}</span>
           </Link>
         ))}
       </nav>
+
+      <div className="px-4 pb-6 pt-2 border-t border-black/5 dark:border-white/5">
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-gray-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5"
+        >
+          {theme === 'dark'
+            ? <Sun className="w-5 h-5 text-amber-400" />
+            : <Moon className="w-5 h-5 text-indigo-500" />}
+          <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+        </button>
+      </div>
     </div>
   );
 }

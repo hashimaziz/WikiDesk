@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchArticleSummary } from '../lib/wikipedia';
 import { Loader2, User, MapPin, Calendar, Link2 } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext } from '../context/useAppContext';
 
 interface SmartSidebarProps {
   html: string;

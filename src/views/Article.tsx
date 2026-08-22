@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchArticleHtml, fetchArticleSummary } from '../lib/wikipedia';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext } from '../context/useAppContext';
+import { FONT_MIN, FONT_MAX, CONTENT_WIDTH_PRESETS } from '../lib/constants';
 import { Maximize, Minimize, Minus, Plus, Clock, Network, BookMarked, X, Columns } from 'lucide-react';
 import { SmartSidebar } from '../components/SmartSidebar';
 import { TimelineModal } from '../components/TimelineModal';
@@ -19,8 +20,7 @@ export function Article() {
   const loading = Boolean(title) && loadedTitle !== title;
 
   // Reading mode settings from context
-  const { focusMode, setFocusMode, fontSize, setFontSize } = useAppContext();
-  const [contentWidth] = useState('max-w-3xl');
+  const { focusMode, setFocusMode, fontSize, setFontSize, contentWidth, setContentWidth } = useAppContext();
   const [showTimeline, setShowTimeline] = useState(false);
   const [showGraph, setShowGraph] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
@@ -158,11 +158,28 @@ export function Article() {
           </div>
           
           <div className="flex items-center space-x-2 bg-black/5 dark:bg-white/5 rounded-full px-3 py-1.5">
-            <button onClick={() => setFontSize(Math.max(12, fontSize - 2))} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full"><Minus className="w-4 h-4" /></button>
+            <button onClick={() => setFontSize(fontSize - 2)} disabled={fontSize <= FONT_MIN} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full disabled:opacity-30"><Minus className="w-4 h-4" /></button>
             <span className="text-sm font-medium w-6 text-center">{fontSize}</span>
-            <button onClick={() => setFontSize(Math.min(32, fontSize + 2))} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full"><Plus className="w-4 h-4" /></button>
+            <button onClick={() => setFontSize(fontSize + 2)} disabled={fontSize >= FONT_MAX} className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full disabled:opacity-30"><Plus className="w-4 h-4" /></button>
           </div>
-          
+
+          <div className="flex items-center bg-black/5 dark:bg-white/5 rounded-full p-1" title="Content Width">
+            {CONTENT_WIDTH_PRESETS.map((width) => (
+              <button
+                key={width}
+                onClick={() => setContentWidth(width)}
+                className={cn(
+                  'px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors',
+                  contentWidth === width
+                    ? 'bg-white dark:bg-white/20 text-blue-600 dark:text-blue-400 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200',
+                )}
+              >
+                {{ 640: 'S', 896: 'M', 1152: 'L' }[width]}
+              </button>
+            ))}
+          </div>
+
           <button 
             onClick={() => setShowTimeline(true)}
             className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
@@ -199,9 +216,9 @@ export function Article() {
 
       {/* Article Content Area */}
       <div className="flex-1 overflow-y-auto px-8 py-12 scroll-smooth">
-        <div 
-          className={cn("mx-auto transition-all duration-300", contentWidth)}
-          style={{ fontSize: `${fontSize}px`, lineHeight: 1.6 }}
+        <div
+          className="mx-auto transition-all duration-300"
+          style={{ fontSize: `${fontSize}px`, lineHeight: 1.6, maxWidth: `${contentWidth}px` }}
         >
           <div 
             className="wikipedia-content prose prose-lg dark:prose-invert prose-blue max-w-none font-serif"
