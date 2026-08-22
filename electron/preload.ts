@@ -1,21 +1,29 @@
-import { ipcRenderer, contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 
-// --------- Expose some API to the Renderer process ---------
-contextBridge.exposeInMainWorld('ipcRenderer', {
-  on(...args: Parameters<typeof ipcRenderer.on>) {
-    const [channel, listener] = args
-    return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
+const api = {
+  history: {
+    record: (articleId: string, title: string) => ipcRenderer.invoke('history:record', articleId, title),
+    getRecent: (limit?: number) => ipcRenderer.invoke('history:getRecent', limit),
+    getContinueReading: () => ipcRenderer.invoke('history:getContinueReading'),
   },
-  off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.off(channel, ...omit)
+  collections: {
+    list: () => ipcRenderer.invoke('collections:list'),
+    create: (name: string) => ipcRenderer.invoke('collections:create', name),
+    delete: (collectionId: string) => ipcRenderer.invoke('collections:delete', collectionId),
+    getArticles: (collectionId: string) => ipcRenderer.invoke('collections:getArticles', collectionId),
+    addArticle: (collectionId: string, articleId: string, title: string, summary: string | null) =>
+      ipcRenderer.invoke('collections:addArticle', collectionId, articleId, title, summary),
+    removeArticle: (collectionId: string, articleId: string) =>
+      ipcRenderer.invoke('collections:removeArticle', collectionId, articleId),
+    getForArticle: (articleId: string) => ipcRenderer.invoke('collections:getForArticle', articleId),
   },
-  send(...args: Parameters<typeof ipcRenderer.send>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.send(channel, ...omit)
+  settings: {
+    get: () => ipcRenderer.invoke('settings:get'),
+    update: (patch: { theme?: 'light' | 'dark'; font_size?: number; content_width?: number }) =>
+      ipcRenderer.invoke('settings:update', patch),
   },
-  invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.invoke(channel, ...omit)
-  },
-})
+}
+
+contextBridge.exposeInMainWorld('wikiDesk', api)
+
+export type WikiDeskApi = typeof api

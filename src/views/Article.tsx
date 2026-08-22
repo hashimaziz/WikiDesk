@@ -7,36 +7,48 @@ import { SmartSidebar } from '../components/SmartSidebar';
 import { TimelineModal } from '../components/TimelineModal';
 import { GraphModal } from '../components/GraphModal';
 import { CompareModal } from '../components/CompareModal';
-import { getCollections, addArticleToCollection } from '../lib/db-client';
-import { cn } from '../lib/utils';
+import { getCollections, addArticleToCollection, getCollectionsForArticle, recordArticleView } from '../lib/db-client';
+import type { Collection } from '../lib/db-client';
+import { cn, safeDecode } from '../lib/utils';
 
 export function Article() {
   const { title } = useParams<{ title: string }>();
   const navigate = useNavigate();
   const [html, setHtml] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  
+  const [loadedTitle, setLoadedTitle] = useState<string | null>(null);
+  const loading = Boolean(title) && loadedTitle !== title;
+
   // Reading mode settings from context
   const { focusMode, setFocusMode, fontSize, setFontSize } = useAppContext();
   const [contentWidth] = useState('max-w-3xl');
   const [showTimeline, setShowTimeline] = useState(false);
   const [showGraph, setShowGraph] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
-  
-  const [collections, setCollections] = useState<any[]>([]);
+
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [savedCollectionIds, setSavedCollectionIds] = useState<string[]>([]);
   const [showCollections, setShowCollections] = useState(false);
 
   useEffect(() => {
-    if (!title) return;
-    setLoading(true);
+    if (!title || loadedTitle === title) return;
+    let cancelled = false;
     fetchArticleHtml(title)
       .then((htmlContent) => {
-        // Strip out some Wikipedia UI elements if needed, but the REST API is quite clean
+        if (cancelled) return;
         setHtml(htmlContent);
+        setLoadedTitle(title);
       })
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
-  }, [title]);
+      .catch((err) => console.error(err));
+
+    const decodedTitle = safeDecode(title);
+    recordArticleView(decodedTitle, decodedTitle.replace(/_/g, ' ')).catch((err) => console.error(err));
+    getCollectionsForArticle(decodedTitle)
+      .then(setSavedCollectionIds)
+      .catch((err) => console.error(err));
+    return () => {
+      cancelled = true;
+    };
+  }, [title, loadedTitle]);
 
   // Intercept internal Wikipedia links to stay inside the app
   const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -47,7 +59,7 @@ export function Article() {
       // Wikipedia internal links in REST API often look like "./Article_Name"
       if (href?.startsWith('./')) {
         e.preventDefault();
-        const nextTitle = decodeURIComponent(href.replace('./', ''));
+        const nextTitle = safeDecode(href.slice(2));
         navigate(`/article/${encodeURIComponent(nextTitle)}`);
       }
     }
@@ -63,25 +75,35 @@ export function Article() {
 
   const handleSaveToCollection = async (collectionId: string) => {
     if (!title) return;
+    const decodedTitle = safeDecode(title);
     try {
-      // First get a short summary for the db
-      let summary = '';
+      let summary: string | null = null;
       try {
-        const sum = await fetchArticleSummary(title);
-        summary = sum.extract || '';
-      } catch (e) {}
-      
-      await addArticleToCollection(collectionId, encodeURIComponent(title), title.replace(/_/g, ' '), summary);
-      setShowCollections(false);
+        const sum = await fetchArticleSummary(decodedTitle);
+        summary = sum.extract || null;
+      } catch {
+        summary = null;
+      }
+
+      await addArticleToCollection(collectionId, decodedTitle, decodedTitle.replace(/_/g, ' '), summary);
+      setSavedCollectionIds((ids) => (ids.includes(collectionId) ? ids : [...ids, collectionId]));
     } catch (err) {
       console.error(err);
     }
   };
 
   const loadCollections = async () => {
-    const cols = await getCollections();
-    setCollections(cols);
-    setShowCollections(true);
+    try {
+      const [cols, savedIds] = await Promise.all([
+        getCollections(),
+        getCollectionsForArticle(safeDecode(title!)),
+      ]);
+      setCollections(cols);
+      setSavedCollectionIds(savedIds);
+      setShowCollections(true);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -112,15 +134,19 @@ export function Article() {
                   <button onClick={() => setShowCollections(false)}><X className="w-4 h-4 text-gray-400" /></button>
                 </div>
                 <div className="max-h-60 overflow-y-auto">
-                  {collections.map(c => (
-                    <button
-                      key={c.id}
-                      onClick={() => handleSaveToCollection(c.id)}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                    >
-                      {c.name}
-                    </button>
-                  ))}
+                  {collections.map(c => {
+                    const saved = savedCollectionIds.includes(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => handleSaveToCollection(c.id)}
+                        className="w-full flex items-center justify-between text-left px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      >
+                        <span className="truncate">{c.name}</span>
+                        {saved && <span className="text-xs text-blue-500 ml-2 shrink-0">Saved</span>}
+                      </button>
+                    );
+                  })}
                   {collections.length === 0 && (
                     <div className="px-4 py-4 text-center text-sm text-gray-500">
                       No collections yet. Create one in the Library.

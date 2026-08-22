@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'node:url'
-import { initializeDB } from '../src/database/db'
+import { initializeDB } from './db'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
