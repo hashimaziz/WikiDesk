@@ -1,0 +1,73 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Class-based dark mode so the user can toggle it independently of the OS. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  --color-sidebar: #f9fafb;
+}
+
+.dark {
+  --color-background: #0a0a0a;
+  --color-foreground: #ededed;
+  --color-sidebar: #111827;
+}
+
+body {
+  margin: 0;
+  color: var(--color-foreground);
+  background-color: var(--color-background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow-y: hidden; /* App handles scrolling in internal containers */
+}
+
+/* Wikipedia Content Overrides */
+.wikipedia-content .mw-editsection {
+  display: none !important;
+}
+
+.wikipedia-content .infobox {
+  float: right;
+  margin-left: 2rem;
+  margin-bottom: 2rem;
+  background-color: var(--color-sidebar);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.wikipedia-content a {
+  text-decoration: none;
+  color: #3b82f6;
+  border-bottom: 1px dotted transparent;
+  transition: all 0.2s;
+}
+
+.wikipedia-content a:hover {
+  border-bottom-color: #3b82f6;
+}
+
+.wikipedia-content figure {
+  margin: 2rem auto;
+  text-align: center;
+}
+
+.wikipedia-content figure img {
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+}
+
+.wikipedia-content figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.dark .wikipedia-content figcaption {
+  color: #9ca3af;
+}
