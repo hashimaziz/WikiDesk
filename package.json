@@ -1,12 +1,16 @@
 {
   "name": "wikidesk",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "A desktop reading desk for English Wikipedia: read, explore, compare and collect articles.",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "dist": "npm run build && electron-builder",
+    "dist:dir": "npm run build && electron-builder --dir",
+    "rebuild": "electron-rebuild -f -w better-sqlite3",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -49,5 +53,49 @@
     "vite-plugin-electron": "^1.0.0",
     "vite-plugin-electron-renderer": "^1.0.0",
     "vitest": "^4.1.11"
+  },
+  "build": {
+    "appId": "com.wikidesk.app",
+    "productName": "WikiDesk",
+    "directories": {
+      "output": "release"
+    },
+    "afterPack": "scripts/after-pack.cjs",
+    "afterSign": "scripts/after-sign.cjs",
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json",
+      "!**/.DS_Store",
+      "!**/*.map"
+    ],
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.education",
+      "identity": null
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Education"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
